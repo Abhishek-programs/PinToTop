@@ -135,7 +135,7 @@ About 1,100 lines of Swift, no dependencies.
 
 ## Later
 
-- [ ] **Interactive pin mode** (opt-in): keep the *real* window on top in place so you can click and type into it, alongside the picture-in-picture mirror. Starting point: [iamshakibali/pin-top](https://github.com/iamshakibali/pin-top) (MIT), which puts a click-through overlay over the window and brings the real one forward when clicked. Needs Accessibility permission, so it must stay opt-in.
+- [ ] **Interactive pin mode** (opt-in): keep the *real* window on top in place so you can click and type into it, alongside the picture-in-picture mirror. Needs Accessibility permission, so it must stay opt-in.
 
 ## Contributing
 
