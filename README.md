@@ -9,11 +9,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Abhishek-programs/PinToTop/releases/latest/download/PinToTop.dmg"><b>Download the DMG</b></a>
+  <a href="#install"><b>Install</b></a>
+  ·
+  <a href="https://github.com/Abhishek-programs/PinToTop/releases/latest/download/PinToTop.dmg">Download the DMG</a>
   ·
   <a href="https://bhattaraiabhishek.com.np/apps/pintotop">Website</a>
-  ·
-  <a href="#install">Install</a>
   ·
   <a href="#how-it-works">How it works</a>
 </p>
@@ -47,17 +47,27 @@ It is a *mirror*, not a window manager. The original window stays where it is. Y
 
 ## Install
 
-### Download (recommended)
+### One-line install (no security warning)
 
-1. Download **[PinToTop.dmg](https://github.com/Abhishek-programs/PinToTop/releases/latest/download/PinToTop.dmg)** from the [latest release](https://github.com/Abhishek-programs/PinToTop/releases/latest).
-2. Open it and drag **Pin To Top** into **Applications**.
-3. Open Pin To Top from Applications. macOS will say it can't verify the app. Click **Done**.
-4. Go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the Pin To Top message. Confirm with your password or Touch ID.
-5. Grant **Screen Recording** when asked (see [Permissions](#permissions)).
+Paste this in Terminal:
 
-Why the warning? The app is free and isn't signed with a paid Apple Developer ID yet, so macOS can't confirm who made it. You only have to do steps 3–4 once. If you'd rather not trust a download, build it yourself (below). It's about 1,100 lines of Swift you can read first.
+```bash
+curl -fsSL https://raw.githubusercontent.com/Abhishek-programs/PinToTop/main/install.sh | zsh
+```
 
-After you install an update, macOS may ask for Screen Recording permission again.
+It downloads the latest release, puts Pin To Top in **Applications**, and opens it. [Read the script first](install.sh) if you like; it's short. Files downloaded with `curl` aren't flagged by macOS, so you skip the "can't verify" dialog.
+
+### Download the DMG
+
+1. Download **[PinToTop.dmg](https://github.com/Abhishek-programs/PinToTop/releases/latest/download/PinToTop.dmg)** and drag Pin To Top into **Applications**.
+2. Open it. macOS will say it can't verify the app. Click **Done**, *not* Move to Trash.
+3. Go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**. Confirm with your password or Touch ID.
+
+Why the warning? The app is free and isn't notarized with a paid Apple Developer ID yet, so macOS can't confirm who made it. You only do this once.
+
+### After installing
+
+Grant **Screen Recording** when asked (see [Permissions](#permissions)). After an update, macOS may ask again.
 
 ### Build from source
 
@@ -112,7 +122,7 @@ About 1,100 lines of Swift, no dependencies.
 - The source window must stay open and **not minimized**. Minimized windows can't be captured.
 - macOS decides which full-screen Spaces accept overlays. Secure surfaces (login window, some protected video, certain system UI) will cover the mirror. No third-party app can override that.
 - Apps that use unusual window levels may not show up in the list (the filter is deliberately conservative).
-- Apple Silicon only. The download isn't notarized yet, so first launch needs **Open Anyway** (see [Install](#install)).
+- Apple Silicon only. The download isn't notarized yet, so the DMG needs **Open Anyway** on first launch, or use the [one-line install](#install).
 - Early software, tested on a small number of setups. Bug reports with your macOS version and the source app are very welcome.
 
 ## Roadmap to a proper release
