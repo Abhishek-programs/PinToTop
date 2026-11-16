@@ -6,7 +6,7 @@
 
 ## Product intent
 
-Pin To Top keeps a live, view-only preview of a user-selected app window visible while the user works elsewhere. The experience should feel like a persistent desktop mini overlay: the same preview is present on connected displays and across Spaces, including eligible full-screen app Spaces. The user chooses a source window from the menu bar or the main app.
+Pin To Top keeps a live, view-only preview of a user-selected app window visible while the user works elsewhere. The experience should feel like a persistent desktop mini overlay: one preview panel opens on the display the pointer is on, can be dragged to any display, and stays visible across Spaces, including eligible full-screen app Spaces. The user chooses a source window from the menu bar or the main app.
 
 The app does not move, activate, or control the source app. Call controls remain in the original app.
 
@@ -40,7 +40,7 @@ Primary flow:
 
 - **FR-6:** Capture only the explicitly selected window through ScreenCaptureKit.
 - **FR-7:** Do not capture system audio. The `SCStreamConfiguration` must keep `capturesAudio` disabled.
-- **FR-8:** Present a synchronized, view-only overlay on each connected display.
+- **FR-8:** Present a single view-only overlay, opened on the display the pointer is on; the user can drag it to another display. If its display is removed, move it back onto a connected one.
 - **FR-9:** Configure overlays to join all Spaces and eligible full-screen app Spaces, and reassert front ordering after Space/app transitions.
 - **FR-10:** Handle source-window removal, stream failure, permission denial, and display changes without crashing; show actionable status text.
 
@@ -67,7 +67,7 @@ Primary flow:
 - System UI such as Dock and menu bar accessories must not clutter the source-window list.
 - Empty, loading, permission-denied, and stream-error states should explain the next action plainly.
 - Overlay close control has a deterministic destination: the main app’s Stop Mirror button.
-- Multiple display overlays share one stream and one frame model; do not start a separate capture stream per display.
+- One overlay panel and one stream per pin; do not start a separate capture stream per display.
 
 ## Technical architecture
 
@@ -76,7 +76,7 @@ Primary flow:
 - **Main-app previews:** `SCScreenshotManager.captureImage` captures periodic single-frame thumbnails for visible window cards; a shared gate limits concurrent preview captures. `NSWorkspace` supplies cached app icons.
 - **Capture:** `SCContentFilter(desktopIndependentWindow:)` and a single `SCStream` configured for up to 30 fps, cursor hidden, audio disabled.
 - **Frames:** `SCStreamOutput` converts sample buffers through Core Image into shared observable frame state.
-- **Overlay:** One non-activating `NSPanel` per connected `NSScreen`, configured for all Spaces/full-screen eligibility and status-bar window level.
+- **Overlay:** One non-activating `NSPanel`, opened on the `NSScreen` under the pointer, configured for all Spaces/full-screen eligibility and status-bar window level.
 - **Lifecycle:** Main-actor `MirrorModel` owns the stream, frame output, selected source, overlay panels, and observers.
 - **Signing:** Local build supports an explicit `CODESIGN_IDENTITY`. Ad-hoc is a fallback only.
 
@@ -85,7 +85,7 @@ Primary flow:
 1. Menu bar icon opens the picker and lists app windows without Dock or other system chrome.
 1a. Main app shows a tab for each connected display; selecting a tab filters the preview cards to eligible, onscreen windows assigned to that display. Minimized windows and menu-bar-only apps are absent; full-screen app windows remain eligible.
 1b. Automatic refreshes never prompt for Screen Recording access. A user-initiated Refresh may invoke the system prompt once per app launch; after denial, another prompt is possible only after reopening the app.
-2. A selected window starts one ScreenCaptureKit stream and displays the same preview on all connected displays.
+2. A selected window starts one ScreenCaptureKit stream and shows the preview in one overlay on the display the pointer is on.
 3. Switching Spaces and entering a normal full-screen browser keeps the overlay visible where supported by macOS.
 4. Stopping from either control surface stops the stream and closes all overlays.
 5. Closing any overlay hides all overlays and opens the main window with Stop Mirror focused.
@@ -104,7 +104,7 @@ Primary flow:
 For follow-on implementation work:
 
 1. Read this document and `README.md` before editing code.
-2. Preserve the core contract: selected-window-only video, no audio capture, menu bar start/stop, all-display overlays, and close-to-Stop behavior.
+2. Preserve the core contract: selected-window-only video, no audio capture, menu bar start/stop, a single overlay that follows Spaces, and close-to-Stop behavior.
 3. Build with `./build-app.sh`; do not treat an ad-hoc signed rebuild as permission-stable.
 4. Keep capture/session lifecycle in `MirrorModel`. Avoid duplicating streams per display.
 5. If splitting work among agents, assign non-overlapping files and have one integrator review the combined UI, window-management, permission, and lifecycle behavior.

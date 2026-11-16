@@ -1,6 +1,6 @@
 # Pin To Top
 
-Picture-in-picture for video calls on your Mac. Pin your FaceTime, Zoom, Meet, or Teams window and a live, view-only copy floats on top of everything else: on every display, in every Space, and over most full-screen apps. Works with any other app window too.
+Picture-in-picture for video calls on your Mac. Pin your FaceTime, Zoom, Meet, or Teams window and a live, view-only copy floats on top of everything else: in every Space, and over most full-screen apps. Works with any other app window too.
 
 Website: https://bhattaraiabhishek.com.np/apps/pintotop
 
@@ -11,7 +11,7 @@ Typical use: you're on a video call, but you need to work in a full-screen edito
 ## What it does
 
 - Lists your open app windows (per display, with live thumbnails) from the menu bar or the main window.
-- **Pin** a window and it gets mirrored into a small floating panel on each connected display.
+- **Pin** a window and it gets mirrored into a small floating panel on the display you're using. Drag it to another display if you like.
 - The panel follows you across Spaces and into full-screen app Spaces where macOS allows it.
 - **Unpin** from the menu bar or main window, or just close the floating panel, to stop capture.
 
@@ -64,7 +64,7 @@ About 1,100 lines of Swift, no dependencies.
 | Window list | `SCShareableContent` (onscreen only), filtered to normal-layer windows of regular apps, assigned to displays by frame intersection |
 | Thumbnails | `SCScreenshotManager.captureImage`, max 2 concurrent captures through a small actor gate |
 | Live capture | One `SCStream` per pinned window via `SCContentFilter(desktopIndependentWindow:)`, up to 30 fps, cursor hidden, audio off |
-| Overlay | One non-activating `NSPanel` per screen at `.statusBar` level with `.canJoinAllSpaces` + `.fullScreenAuxiliary`, re-raised on Space changes. All panels share one stream. |
+| Overlay | One non-activating `NSPanel` at `.statusBar` level with `.canJoinAllSpaces` + `.fullScreenAuxiliary`, opened on the display under the pointer and re-raised on Space changes. |
 | Permission | `CGPreflightScreenCaptureAccess` before every ScreenCaptureKit call, so background refreshes never trigger the system prompt |
 
 [PRD.md](PRD.md) has the full requirements and design notes.

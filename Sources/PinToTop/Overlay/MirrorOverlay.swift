@@ -3,9 +3,9 @@ import SwiftUI
 
 @MainActor
 final class MirrorOverlayController {
-    /// One panel per connected display, keyed by display ID so a screen
-    /// change only adds/removes the affected panels (user-resized ones stay put).
-    private var panels: [CGDirectDisplayID: MirrorPanel] = [:]
+    /// A single panel, opened on the display the pointer is on. The user can
+    /// drag it to another display; it follows Spaces on whichever display it's on.
+    private var panel: MirrorPanel?
     private weak var model: MirrorModel?
     private var spaceObserver: NSObjectProtocol?
     private var activationObserver: NSObjectProtocol?
@@ -14,38 +14,35 @@ final class MirrorOverlayController {
 
     func show(model: MirrorModel) {
         self.model = model
-        syncPanelsWithScreens()
+        if panel == nil, let screen = Self.screenWithPointer() {
+            panel = makePanel(on: screen, model: model)
+        }
+        raise()
         installObservers()
     }
 
     func hide() {
-        panels.values.forEach { $0.orderOut(nil) }
-        panels.removeAll()
+        panel?.orderOut(nil)
+        panel = nil
         model = nil
         removeObservers()
     }
 
-    private func syncPanelsWithScreens() {
-        guard let model else { return }
-        var screensByID: [CGDirectDisplayID: NSScreen] = [:]
-        for screen in NSScreen.screens {
-            if let id = Self.displayID(of: screen) { screensByID[id] = screen }
-        }
-        for (id, panel) in panels where screensByID[id] == nil {
-            panel.orderOut(nil)
-            panels[id] = nil
-        }
-        for (id, screen) in screensByID {
-            if let panel = panels[id] {
-                // Display resolution/arrangement changed: keep the panel on its screen.
-                if !screen.visibleFrame.intersects(panel.frame) {
-                    panel.setFrame(Self.defaultFrame(on: screen), display: true)
-                }
-            } else {
-                panels[id] = makePanel(on: screen, model: model)
-            }
+    /// Displays changed (e.g. HDMI unplugged): if the panel is now off every
+    /// screen, bring it back to the corner of the display the pointer is on.
+    private func keepPanelOnScreen() {
+        guard let panel else { return }
+        if !NSScreen.screens.contains(where: { $0.visibleFrame.intersects(panel.frame) }),
+           let screen = Self.screenWithPointer() {
+            panel.setFrame(Self.defaultFrame(on: screen), display: true)
         }
         raise()
+    }
+
+    private static func screenWithPointer() -> NSScreen? {
+        let point = NSEvent.mouseLocation
+        return NSScreen.screens.first { NSMouseInRect(point, $0.frame, false) }
+            ?? NSScreen.main ?? NSScreen.screens.first
     }
 
     private func makePanel(on screen: NSScreen, model: MirrorModel) -> MirrorPanel {
@@ -76,10 +73,6 @@ final class MirrorOverlayController {
         return NSRect(x: visible.maxX - width - 24, y: visible.maxY - height - 24, width: width, height: height)
     }
 
-    private static func displayID(of screen: NSScreen) -> CGDirectDisplayID? {
-        (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
-    }
-
     private func installObservers() {
         removeObservers()
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -101,7 +94,7 @@ final class MirrorOverlayController {
             object: NSApp,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor [weak self] in self?.syncPanelsWithScreens() }
+            Task { @MainActor [weak self] in self?.keepPanelOnScreen() }
         }
     }
 
@@ -115,7 +108,7 @@ final class MirrorOverlayController {
     }
 
     private func raise() {
-        panels.values.forEach { $0.orderFrontRegardless() }
+        panel?.orderFrontRegardless()
     }
 }
 
