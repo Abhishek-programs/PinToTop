@@ -23,6 +23,7 @@ struct MenuBarPicker: View {
             }
 
             windowPreviews
+            PinOptions(model: model)
             if model.isMirroring {
                 Button(role: .destructive) { Task { await model.stop() } } label: {
                     Label("Unpin", systemImage: "pin.slash")

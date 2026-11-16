@@ -63,6 +63,7 @@ struct ContentView: View {
 
     private var controls: some View {
         VStack(alignment: .leading, spacing: 8) {
+            PinOptions(model: model)
             if model.isMirroring {
                 Button(role: .destructive) { Task { await model.stop() } } label: {
                     Label("Unpin", systemImage: "pin.slash")

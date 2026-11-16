@@ -35,6 +35,8 @@ Typical use: you're on a video call, but you need to work in a full-screen edito
 
 - Lists your open app windows (per display, with live thumbnails) from the menu bar or the main window.
 - **Pin** a window and it gets mirrored into a small floating panel on the display you're using. Drag it to another display if you like.
+- Turn on **Show on all displays** to get a copy on every connected screen instead. You can switch while pinned.
+- Turn on **Launch at login** to have it waiting in the menu bar after every restart.
 - The panel follows you across Spaces and into full-screen app Spaces where macOS allows it.
 - **Unpin** from the menu bar or main window, or just close the floating panel, to stop capture.
 
@@ -105,14 +107,15 @@ Pin To Top needs **Screen Recording** permission. That's how macOS lets any app 
 
 ## How it works
 
-About 1,100 lines of Swift, no dependencies.
+About 1,400 lines of Swift, no dependencies.
 
 | Piece | Implementation |
 |---|---|
 | Window list | `SCShareableContent` (onscreen only), filtered to normal-layer windows of regular apps, assigned to displays by frame intersection |
 | Thumbnails | `SCScreenshotManager.captureImage`, max 2 concurrent captures through a small actor gate |
 | Live capture | One `SCStream` per pinned window via `SCContentFilter(desktopIndependentWindow:)`, up to 30 fps, cursor hidden, audio off |
-| Overlay | One non-activating `NSPanel` at `.statusBar` level with `.canJoinAllSpaces` + `.fullScreenAuxiliary`, opened on the display under the pointer and re-raised on Space changes. |
+| Overlay | Non-activating `NSPanel` at `.statusBar` level with `.canJoinAllSpaces` + `.fullScreenAuxiliary`, re-raised on Space changes. One panel on the display under the pointer, or one per display with **Show on all displays**; all panels share one stream. |
+| Launch at login | `SMAppService.mainApp` register/unregister; the switch reads the live status, so changes made in System Settings → Login Items show up too |
 | Permission | `CGPreflightScreenCaptureAccess` before every ScreenCaptureKit call, so background refreshes never trigger the system prompt |
 
 [PRD.md](PRD.md) has the full requirements and design notes.

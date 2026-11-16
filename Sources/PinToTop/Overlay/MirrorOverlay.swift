@@ -3,9 +3,18 @@ import SwiftUI
 
 @MainActor
 final class MirrorOverlayController {
-    /// A single panel, opened on the display the pointer is on. The user can
-    /// drag it to another display; it follows Spaces on whichever display it's on.
-    private var panel: MirrorPanel?
+    /// One panel per display when true; otherwise a single panel that opens
+    /// on the display under the pointer and can be dragged anywhere.
+    /// Changing it while pinned switches modes live.
+    var showsOnAllDisplays = false {
+        didSet {
+            guard oldValue != showsOnAllDisplays, model != nil else { return }
+            switchMode()
+        }
+    }
+
+    private var panel: MirrorPanel?                                  // one-display mode
+    private var panels: [CGDirectDisplayID: MirrorPanel] = [:]       // all-displays mode
     private weak var model: MirrorModel?
     private var spaceObserver: NSObjectProtocol?
     private var activationObserver: NSObjectProtocol?
@@ -14,27 +23,67 @@ final class MirrorOverlayController {
 
     func show(model: MirrorModel) {
         self.model = model
-        if panel == nil, let screen = Self.screenWithPointer() {
-            panel = makePanel(on: screen, model: model)
-        }
-        raise()
+        syncPanels()
         installObservers()
     }
 
     func hide() {
         panel?.orderOut(nil)
         panel = nil
+        panels.values.forEach { $0.orderOut(nil) }
+        panels.removeAll()
         model = nil
         removeObservers()
     }
 
-    /// Displays changed (e.g. HDMI unplugged): if the panel is now off every
-    /// screen, bring it back to the corner of the display the pointer is on.
-    private func keepPanelOnScreen() {
-        guard let panel else { return }
-        if !NSScreen.screens.contains(where: { $0.visibleFrame.intersects(panel.frame) }),
-           let screen = Self.screenWithPointer() {
-            panel.setFrame(Self.defaultFrame(on: screen), display: true)
+    /// Keeps the panel the user is looking at (and its size/position) when
+    /// switching, and adds or removes the rest.
+    private func switchMode() {
+        if showsOnAllDisplays {
+            if let panel, let id = Self.displayID(of: Self.screen(containing: panel.frame)) {
+                panels[id] = panel
+            } else {
+                panel?.orderOut(nil)
+            }
+            panel = nil
+        } else {
+            let keepID = Self.displayID(of: Self.screenWithPointer())
+            for (id, p) in panels where id != keepID { p.orderOut(nil) }
+            panel = keepID.flatMap { panels[$0] }
+            panels.removeAll()
+        }
+        syncPanels()
+    }
+
+    /// Creates missing panels and keeps existing ones on a connected screen.
+    /// Also runs when displays are plugged in or removed.
+    private func syncPanels() {
+        guard let model else { return }
+        if showsOnAllDisplays {
+            var screensByID: [CGDirectDisplayID: NSScreen] = [:]
+            for screen in NSScreen.screens {
+                if let id = Self.displayID(of: screen) { screensByID[id] = screen }
+            }
+            for (id, p) in panels where screensByID[id] == nil {
+                p.orderOut(nil)
+                panels[id] = nil
+            }
+            for (id, screen) in screensByID {
+                if let p = panels[id] {
+                    if !screen.visibleFrame.intersects(p.frame) {
+                        p.setFrame(Self.defaultFrame(on: screen), display: true)
+                    }
+                } else {
+                    panels[id] = makePanel(on: screen, model: model)
+                }
+            }
+        } else if let panel {
+            if !NSScreen.screens.contains(where: { $0.visibleFrame.intersects(panel.frame) }),
+               let screen = Self.screenWithPointer() {
+                panel.setFrame(Self.defaultFrame(on: screen), display: true)
+            }
+        } else if let screen = Self.screenWithPointer() {
+            panel = makePanel(on: screen, model: model)
         }
         raise()
     }
@@ -43,6 +92,17 @@ final class MirrorOverlayController {
         let point = NSEvent.mouseLocation
         return NSScreen.screens.first { NSMouseInRect(point, $0.frame, false) }
             ?? NSScreen.main ?? NSScreen.screens.first
+    }
+
+    private static func screen(containing frame: NSRect) -> NSScreen? {
+        NSScreen.screens.max { a, b in
+            a.frame.intersection(frame).width * a.frame.intersection(frame).height
+                < b.frame.intersection(frame).width * b.frame.intersection(frame).height
+        }
+    }
+
+    private static func displayID(of screen: NSScreen?) -> CGDirectDisplayID? {
+        (screen?.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
     }
 
     private func makePanel(on screen: NSScreen, model: MirrorModel) -> MirrorPanel {
@@ -94,7 +154,7 @@ final class MirrorOverlayController {
             object: NSApp,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor [weak self] in self?.keepPanelOnScreen() }
+            Task { @MainActor [weak self] in self?.syncPanels() }
         }
     }
 
@@ -109,6 +169,7 @@ final class MirrorOverlayController {
 
     private func raise() {
         panel?.orderFrontRegardless()
+        panels.values.forEach { $0.orderFrontRegardless() }
     }
 }
 

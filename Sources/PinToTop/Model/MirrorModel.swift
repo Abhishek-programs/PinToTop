@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 import SwiftUI
 
 @MainActor
@@ -15,6 +16,19 @@ final class MirrorModel: ObservableObject {
     @Published var isMirroring = false
     @Published private(set) var sourceDescription: String?
     @Published private(set) var isSourcePaused = false
+    /// Show the pinned window on every display instead of only one. Saved
+    /// between launches; changing it while pinned applies right away.
+    @Published var showOnAllDisplays: Bool {
+        didSet {
+            UserDefaults.standard.set(showOnAllDisplays, forKey: Self.allDisplaysKey)
+            overlays.showsOnAllDisplays = showOnAllDisplays
+            if isMirroring, !isSourcePaused { status = pinnedStatus }
+        }
+    }
+    private static let allDisplaysKey = "showOnAllDisplays"
+    /// Mirrors the system's login item state for this app (System Settings →
+    /// General → Login Items), so it stays right if the user changes it there.
+    @Published private(set) var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     /// Registered by the always-present menu bar label, which has SwiftUI's
     /// `openWindow` action. Lets non-view code open the main window.
@@ -30,11 +44,34 @@ final class MirrorModel: ObservableObject {
 
     init() {
         hasScreenCaptureAccess = access.isGranted
+        showOnAllDisplays = UserDefaults.standard.bool(forKey: Self.allDisplaysKey)
+        overlays.showsOnAllDisplays = showOnAllDisplays
         overlays.onUserClose = { [weak self] in self?.overlayWasClosed() }
         Task {
             await Self.waitUntilAppIsReady()
             await self.requestScreenRecordingAccessIfNeeded()
         }
+    }
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            status = "Couldn't change Launch at Login: \(error.localizedDescription)"
+        }
+        refreshLaunchAtLogin()
+        if enabled, SMAppService.mainApp.status == .requiresApproval {
+            status = "Allow Pin To Top in System Settings → Login Items to finish."
+            SMAppService.openSystemSettingsLoginItems()
+        }
+    }
+
+    func refreshLaunchAtLogin() {
+        launchAtLogin = SMAppService.mainApp.status == .enabled
     }
 
     var selectedWindow: WindowChoice? { windows.first { $0.id == selectedID } }
@@ -119,7 +156,7 @@ final class MirrorModel: ObservableObject {
             sourceDescription = "\(choice.app) · \(choice.title)"
             isMirroring = true
             isSourcePaused = false
-            status = Self.pinnedStatus
+            status = pinnedStatus
             overlays.show(model: self)
             watchSource(id: choice.id, generation: generation)
         } catch {
@@ -133,14 +170,18 @@ final class MirrorModel: ObservableObject {
 
     // MARK: - Live source monitoring
 
-    private static let pinnedStatus = "Pinned on all displays and Spaces."
+    private var pinnedStatus: String {
+        showOnAllDisplays
+            ? "Pinned on every display and Space."
+            : "Pinned. Drag the panel to any display."
+    }
 
     private func receive(_ frame: NSImage, generation: Int) {
         guard isMirroring, generation == mirrorGeneration else { return }
         frames.image = frame
         if isSourcePaused {
             isSourcePaused = false
-            status = Self.pinnedStatus
+            status = pinnedStatus
         }
     }
 

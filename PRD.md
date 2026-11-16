@@ -1,12 +1,12 @@
 # Pin To Top — Product Requirements Document
 
 **Status:** Local macOS prototype, iterating toward a distributable utility  
-**Version:** 0.3  
+**Version:** 0.4  
 **Platform:** macOS 14+ (currently built for Apple Silicon)
 
 ## Product intent
 
-Pin To Top keeps a live, view-only preview of a user-selected app window visible while the user works elsewhere. The experience should feel like a persistent desktop mini overlay: one preview panel opens on the display the pointer is on, can be dragged to any display, and stays visible across Spaces, including eligible full-screen app Spaces. The user chooses a source window from the menu bar or the main app.
+Pin To Top keeps a live, view-only preview of a user-selected app window visible while the user works elsewhere. The experience should feel like a persistent desktop mini overlay: by default one preview panel opens on the display the pointer is on and can be dragged to any display; with Show on all displays, every connected display gets a copy. The preview stays visible across Spaces, including eligible full-screen app Spaces. The user chooses a source window from the menu bar or the main app.
 
 The app does not move, activate, or control the source app. Call controls remain in the original app.
 
@@ -40,7 +40,9 @@ Primary flow:
 
 - **FR-6:** Capture only the explicitly selected window through ScreenCaptureKit.
 - **FR-7:** Do not capture system audio. The `SCStreamConfiguration` must keep `capturesAudio` disabled.
-- **FR-8:** Present a single view-only overlay, opened on the display the pointer is on; the user can drag it to another display. If its display is removed, move it back onto a connected one.
+- **FR-8:** By default, present a single view-only overlay, opened on the display the pointer is on; the user can drag it to another display. If its display is removed, move it back onto a connected one.
+- **FR-8a:** A "Show on all displays" switch (menu bar picker and main app, saved between launches) shows one overlay per connected display instead. Switching while pinned applies immediately and keeps the panel the user is looking at.
+- **FR-8b:** A "Launch at login" switch (menu bar picker and main app) registers the app as a login item via `SMAppService.mainApp`. It reflects the live system state, including changes made in System Settings → Login Items. If macOS needs approval, open Login Items settings and say so in the status text.
 - **FR-9:** Configure overlays to join all Spaces and eligible full-screen app Spaces, and reassert front ordering after Space/app transitions.
 - **FR-10:** Handle source-window removal, stream failure, permission denial, and display changes without crashing; show actionable status text.
 
@@ -66,8 +68,8 @@ Primary flow:
 - Menu picker is compact, keyboard accessible, and distinguishes the selected window with a checkmark/selection treatment.
 - System UI such as Dock and menu bar accessories must not clutter the source-window list.
 - Empty, loading, permission-denied, and stream-error states should explain the next action plainly.
-- Overlay close control has a deterministic destination: the main app’s Stop Mirror button.
-- One overlay panel and one stream per pin; do not start a separate capture stream per display.
+- Closing the overlay unpins and brings back the main app with the same window selected.
+- One stream per pin, shared by every overlay panel; do not start a separate capture stream per display.
 
 ## Technical architecture
 
@@ -76,7 +78,7 @@ Primary flow:
 - **Main-app previews:** `SCScreenshotManager.captureImage` captures periodic single-frame thumbnails for visible window cards; a shared gate limits concurrent preview captures. `NSWorkspace` supplies cached app icons.
 - **Capture:** `SCContentFilter(desktopIndependentWindow:)` and a single `SCStream` configured for up to 30 fps, cursor hidden, audio disabled.
 - **Frames:** `SCStreamOutput` converts sample buffers through Core Image into shared observable frame state.
-- **Overlay:** One non-activating `NSPanel`, opened on the `NSScreen` under the pointer, configured for all Spaces/full-screen eligibility and status-bar window level.
+- **Overlay:** Non-activating `NSPanel`s: one on the `NSScreen` under the pointer, or one per screen when Show on all displays is on, configured for all Spaces/full-screen eligibility and status-bar window level.
 - **Lifecycle:** Main-actor `MirrorModel` owns the stream, frame output, selected source, overlay panels, and observers.
 - **Signing:** Local build supports an explicit `CODESIGN_IDENTITY`. Ad-hoc is a fallback only.
 
@@ -85,10 +87,10 @@ Primary flow:
 1. Menu bar icon opens the picker and lists app windows without Dock or other system chrome.
 1a. Main app shows a tab for each connected display; selecting a tab filters the preview cards to eligible, onscreen windows assigned to that display. Minimized windows and menu-bar-only apps are absent; full-screen app windows remain eligible.
 1b. Automatic refreshes never prompt for Screen Recording access. A user-initiated Refresh may invoke the system prompt once per app launch; after denial, another prompt is possible only after reopening the app.
-2. A selected window starts one ScreenCaptureKit stream and shows the preview in one overlay on the display the pointer is on.
+2. A selected window starts one ScreenCaptureKit stream and shows the preview in one overlay on the display the pointer is on, or on every display when Show on all displays is on.
 3. Switching Spaces and entering a normal full-screen browser keeps the overlay visible where supported by macOS.
 4. Stopping from either control surface stops the stream and closes all overlays.
-5. Closing any overlay hides all overlays and opens the main window with Stop Mirror focused.
+5. Closing any overlay unpins: capture stops, all overlays hide, and the main window opens with the same window selected.
 6. No system audio or microphone capture occurs.
 7. Permission denial, source closure, and display changes produce a recoverable user-facing state.
 
@@ -99,12 +101,12 @@ Primary flow:
 - The current build script targets arm64 and produces an ad-hoc local app unless a signing identity is supplied.
 - Before public distribution: stable Apple Developer signing, hardened runtime review, notarization, universal binary decision, crash/stream recovery, and an explicit macOS compatibility matrix are required.
 
-## AI handoff
+## Contributor notes
 
 For follow-on implementation work:
 
 1. Read this document and `README.md` before editing code.
-2. Preserve the core contract: selected-window-only video, no audio capture, menu bar start/stop, a single overlay that follows Spaces, and close-to-Stop behavior.
+2. Preserve the core contract: selected-window-only video, no audio capture, menu bar start/stop, overlays that follow Spaces (one display by default, all displays as an option), and close-to-unpin behavior.
 3. Build with `./build-app.sh`; do not treat an ad-hoc signed rebuild as permission-stable.
 4. Keep capture/session lifecycle in `MirrorModel`. Avoid duplicating streams per display.
 5. If splitting work among agents, assign non-overlapping files and have one integrator review the combined UI, window-management, permission, and lifecycle behavior.
