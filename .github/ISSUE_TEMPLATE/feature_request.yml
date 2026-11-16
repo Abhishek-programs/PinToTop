@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest an idea or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the situation, not just the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to happen?
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: Ground rules
+      description: See CONTRIBUTING.md. Features that break these need discussion first.
+      options:
+        - label: This doesn't require audio capture, network access, full-display capture, or controlling the source app.

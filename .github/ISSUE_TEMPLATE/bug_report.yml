@@ -1,0 +1,45 @@
+name: Bug report
+description: Something didn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you expected vs. what you saw. A screen recording helps a lot.
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "e.g. 15.1 (run: sw_vers -productVersion)"
+    validations:
+      required: true
+  - type: dropdown
+    id: chip
+    attributes:
+      label: Mac type
+      options: [Apple Silicon, Intel]
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source app you pinned
+      placeholder: "e.g. Zoom, Google Meet in Chrome, FaceTime"
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Display / Spaces setup
+      description: Number of displays, was the source or target app full screen, Stage Manager on/off.
+  - type: dropdown
+    id: signing
+    attributes:
+      label: How did you build it?
+      options:
+        - ./build-app.sh (ad-hoc)
+        - ./build-app.sh with CODESIGN_IDENTITY
+        - Downloaded release

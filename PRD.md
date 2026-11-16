@@ -1,4 +1,4 @@
-# Floaty Mirror — Product Requirements Document
+# Pin To Top — Product Requirements Document
 
 **Status:** Local macOS prototype, iterating toward a distributable utility  
 **Version:** 0.3  
@@ -6,7 +6,7 @@
 
 ## Product intent
 
-Floaty Mirror keeps a live, view-only preview of a user-selected app window visible while the user works elsewhere. The experience should feel like a persistent desktop mini overlay: the same preview is present on connected displays and across Spaces, including eligible full-screen app Spaces. The user chooses a source window from the menu bar or the main app.
+Pin To Top keeps a live, view-only preview of a user-selected app window visible while the user works elsewhere. The experience should feel like a persistent desktop mini overlay: the same preview is present on connected displays and across Spaces, including eligible full-screen app Spaces. The user chooses a source window from the menu bar or the main app.
 
 The app does not move, activate, or control the source app. Call controls remain in the original app.
 
@@ -16,7 +16,7 @@ People who want to watch a video call or other app window while working in a bro
 
 Primary flow:
 
-1. Open the Floaty Mirror menu bar picker.
+1. Open the Pin To Top menu bar picker.
 2. Select an open app window.
 3. Start the mirror.
 4. Continue working across displays or Spaces while the preview remains visible where macOS permits it.
@@ -28,7 +28,7 @@ Primary flow:
 
 - **FR-1:** Show a refreshable list of eligible open app windows in the menu bar picker and the main app. The main app refreshes automatically while visible.
 - **FR-2:** Each row identifies the app, window title, and approximate size.
-- **FR-3:** Exclude Floaty Mirror’s own windows, Dock, menu bar/control center, notification center, login UI, and other system-owned or non-normal-layer windows.
+- **FR-3:** Exclude Pin To Top’s own windows, Dock, menu bar/control center, notification center, login UI, and other system-owned or non-normal-layer windows.
 - **FR-4:** Do not present a full-display capture option in the normal selection flow.
 - **FR-5:** Keep the selected window visible in both the menu picker and main app until it disappears or the user changes selection.
 - **FR-5a:** Show the source app icon and a live thumbnail preview in each visible main-app window card. Refresh thumbnails periodically without creating a separate persistent stream for every window.
@@ -47,7 +47,7 @@ Primary flow:
 ### Controls and lifecycle
 
 - **FR-11:** Provide Start Mirror and Stop Mirror in both the menu bar picker and main app.
-- **FR-12:** Closing any mirror overlay hides all mirror overlays and opens/raises the main app with Stop Mirror focused. Closing the preview must not silently restart the overlay.
+- **FR-12:** Closing any mirror overlay unpins: it stops the stream, hides all mirror overlays, and opens/raises the main app with the same window still selected so it can be pinned again. Closing the preview must not silently restart the overlay.
 - **FR-13:** Stopping capture releases the ScreenCaptureKit stream, frame output, overlay panels, and notification observers.
 - **FR-14:** The menu bar picker refreshes the eligible window list when opened and exposes a manual refresh control.
 
@@ -97,7 +97,7 @@ Primary flow:
 - AppKit exposes full-screen auxiliary/join behaviors, but macOS makes the final eligibility decision. No third-party app can guarantee visibility over secure desktop, login UI, protected media, or every system surface.
 - Window-level system filtering is intentionally conservative; unusual user app windows may be omitted if they use non-normal window levels.
 - The current build script targets arm64 and produces an ad-hoc local app unless a signing identity is supplied.
-- Before public distribution: stable Apple Developer signing, hardened runtime review, notarization, universal binary decision, app icon, crash/stream recovery, and an explicit macOS compatibility matrix are required.
+- Before public distribution: stable Apple Developer signing, hardened runtime review, notarization, universal binary decision, crash/stream recovery, and an explicit macOS compatibility matrix are required.
 
 ## AI handoff
 
