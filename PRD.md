@@ -20,7 +20,7 @@ Primary flow:
 2. Select an open app window.
 3. Start the mirror.
 4. Continue working across displays or Spaces while the preview remains visible where macOS permits it.
-5. Stop the capture from the menu bar or main app. Closing a mirror hides its overlays and routes the user to the main app’s Stop Mirror control.
+5. Unpin from the menu bar or main app, or close the floating panel; closing it unpins and brings back the main app with the same window selected.
 
 ## Functional requirements
 
@@ -48,7 +48,7 @@ Primary flow:
 
 ### Controls and lifecycle
 
-- **FR-11:** Provide Start Mirror and Stop Mirror in both the menu bar picker and main app.
+- **FR-11:** Provide Pin and Unpin in both the menu bar picker and main app.
 - **FR-12:** Closing any mirror overlay unpins: it stops the stream, hides all mirror overlays, and opens/raises the main app with the same window still selected so it can be pinned again. Closing the preview must not silently restart the overlay.
 - **FR-13:** Stopping capture releases the ScreenCaptureKit stream, frame output, overlay panels, and notification observers.
 - **FR-14:** The menu bar picker refreshes the eligible window list when opened and exposes a manual refresh control.
@@ -59,7 +59,7 @@ Primary flow:
 - The app captures video only. It must not request microphone permission or capture audio.
 - Capture remains local; the prototype must not upload or transmit captured frames.
 - The app is view-only. Do not add click-through, accessibility control, keyboard capture, or source-app automation without a separate product decision.
-- Screen capture is visibly active while mirroring; the menu and main window must expose the active source and a reliable Stop Mirror action.
+- Screen capture is visibly active while mirroring; the menu and main window must expose the active source and a reliable Unpin action.
 - Ad-hoc signing changes the code identity across rebuilds and can invalidate TCC permissions. Development and release builds should use a stable signing identity.
 
 ## UX requirements
