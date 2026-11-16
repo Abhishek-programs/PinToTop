@@ -1,8 +1,31 @@
-# Pin To Top
+<p align="center">
+  <img src="AppIcon.iconset/icon_128x128@2x.png" width="128" alt="Pin To Top app icon">
+</p>
 
-Picture-in-picture for video calls on your Mac. Pin your FaceTime, Zoom, Meet, or Teams window and a live, view-only copy floats on top of everything else: in every Space, and over most full-screen apps. Works with any other app window too.
+<h1 align="center">Pin To Top</h1>
 
-Website: https://bhattaraiabhishek.com.np/apps/pintotop
+<p align="center">
+  Picture-in-picture for video calls on your Mac, even over full-screen apps.
+</p>
+
+<p align="center">
+  <a href="https://github.com/Abhishek-programs/PinToTop/releases/latest/download/PinToTop.dmg"><b>Download the DMG</b></a>
+  ·
+  <a href="https://bhattaraiabhishek.com.np/apps/pintotop">Website</a>
+  ·
+  <a href="#install">Install</a>
+  ·
+  <a href="#how-it-works">How it works</a>
+</p>
+
+<p align="center">
+  <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-black">
+  <img alt="Apple Silicon" src="https://img.shields.io/badge/Apple%20Silicon-arm64-black">
+  <img alt="Swift, no dependencies" src="https://img.shields.io/badge/Swift-no%20dependencies-orange">
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-blue"></a>
+</p>
+
+Pin your FaceTime, Zoom, Meet, or Teams window and a live, view-only copy floats on top of everything else: in every Space and over most full-screen apps. Works with any other app window too.
 
 Typical use: you're on a video call, but you need to work in a full-screen editor or browser. Pin the call window and a small live mirror stays in the corner while you work.
 
@@ -20,21 +43,36 @@ It is a *mirror*, not a window manager. The original window stays where it is. Y
 ## Requirements
 
 - macOS 14 (Sonoma) or later
-- Apple Silicon (the build script targets `arm64` only for now)
-- Xcode Command Line Tools (`xcode-select --install`)
+- Apple Silicon
 
-## Install (build from source)
+## Install
 
-There is no signed download yet. You build it yourself:
+### Download (recommended)
+
+1. Download **[PinToTop.dmg](https://github.com/Abhishek-programs/PinToTop/releases/latest/download/PinToTop.dmg)** from the [latest release](https://github.com/Abhishek-programs/PinToTop/releases/latest).
+2. Open it and drag **Pin To Top** into **Applications**.
+3. Open Pin To Top from Applications. macOS will say it can't verify the app. Click **Done**.
+4. Go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the Pin To Top message. Confirm with your password or Touch ID.
+5. Grant **Screen Recording** when asked (see [Permissions](#permissions)).
+
+Why the warning? The app is free and isn't signed with a paid Apple Developer ID yet, so macOS can't confirm who made it. You only have to do steps 3–4 once. If you'd rather not trust a download, build it yourself (below). It's about 1,100 lines of Swift you can read first.
+
+After you install an update, macOS may ask for Screen Recording permission again.
+
+### Build from source
+
+Needs the Xcode Command Line Tools (`xcode-select --install`).
 
 ```bash
-git clone <REPO_URL>
+git clone https://github.com/Abhishek-programs/PinToTop.git
 cd PinToTop
 ./build-app.sh
 open "outputs/Pin To Top.app"
 ```
 
-The build is **ad-hoc signed** and **not notarized**. That's fine on the machine that built it. If you copy the `.app` to another Mac, Gatekeeper will block it, and you'll need to right-click → Open (or remove the quarantine attribute) at your own risk.
+`./make-dmg.sh` builds the app and packs it into `outputs/PinToTop.dmg`.
+
+The build is **ad-hoc signed** and **not notarized**. That's fine on the machine that built it.
 
 ### Stable signing (optional, recommended if you rebuild often)
 
@@ -74,13 +112,14 @@ About 1,100 lines of Swift, no dependencies.
 - The source window must stay open and **not minimized**. Minimized windows can't be captured.
 - macOS decides which full-screen Spaces accept overlays. Secure surfaces (login window, some protected video, certain system UI) will cover the mirror. No third-party app can override that.
 - Apps that use unusual window levels may not show up in the list (the filter is deliberately conservative).
-- Apple Silicon only, unsigned, not notarized (see below).
+- Apple Silicon only. The download isn't notarized yet, so first launch needs **Open Anyway** (see [Install](#install)).
 - Early software, tested on a small number of setups. Bug reports with your macOS version and the source app are very welcome.
 
 ## Roadmap to a proper release
 
 - [ ] Developer ID signing + hardened runtime
-- [ ] Notarization and a downloadable `.dmg` / `.zip`
+- [x] Downloadable `.dmg`
+- [ ] Notarization
 - [ ] Universal binary (Apple Silicon + Intel)
 - [ ] Compatibility matrix (macOS versions × common call/video apps)
 
