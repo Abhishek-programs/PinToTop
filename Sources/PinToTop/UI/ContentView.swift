@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var model: MirrorModel
-    @FocusState private var stopButtonFocused: Bool
 
     private var columns: [GridItem] {
         [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
@@ -17,9 +16,6 @@ struct ContentView: View {
         .padding(18)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
-        .onChange(of: model.stopFocusRequest) { _, _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { stopButtonFocused = true }
-        }
         .task {
             while !Task.isCancelled {
                 await model.refreshWindows()
@@ -74,7 +70,6 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
-                .focused($stopButtonFocused)
                 .keyboardShortcut(.defaultAction)
             } else {
                 Button { Task { await model.start() } } label: {

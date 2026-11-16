@@ -10,7 +10,7 @@ struct PinToTopApp: App {
         MenuBarExtra {
             MenuBarPicker(model: model)
         } label: {
-            Label("Pin To Top", systemImage: model.isMirroring ? "pin.fill" : "pin")
+            MenuBarLabel(model: model)
         }
         .menuBarExtraStyle(.window)
 
@@ -19,6 +19,18 @@ struct PinToTopApp: App {
                 .frame(minWidth: 640, minHeight: 480)
         }
         .defaultSize(width: 760, height: 560)
+    }
+}
+
+/// The menu bar label is always rendered, so it is the one place that can hand
+/// SwiftUI's `openWindow` action to the model before any window exists.
+private struct MenuBarLabel: View {
+    @ObservedObject var model: MirrorModel
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Label("Pin To Top", systemImage: model.isMirroring ? "pin.fill" : "pin")
+            .onAppear { model.openMainWindow = { openWindow(id: "main") } }
     }
 }
 
@@ -41,6 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
+@MainActor
 enum HelperWindow {
     static let title = "Pin To Top"
     static var userRequested = false
